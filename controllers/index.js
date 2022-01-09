@@ -1,6 +1,10 @@
 const models = require("../models");
 const bcrypt = require("bcrypt");
 const joi = require("joi");
+const dotenv = require("dotenv");
+const jwt = require("jsonwebtoken");
+
+dotenv.config();
 
 async function getAllUsers() {
   try {
@@ -40,6 +44,12 @@ async function createUser(req) {
       body: { status: false, message: validation.error.details[0].message },
     };
   }
+  if (req.sni.length !== 16) {
+    return {
+      status: 422,
+      body: { status: false, message: "SNI number must be 16 digit" },
+    };
+  }
   try {
     let emailExist = await models.user.findOne({ where: { email: req.email } });
     if (emailExist) {
@@ -76,4 +86,55 @@ async function createUser(req) {
   }
 }
 
-module.exports = { createUser, getAllUsers };
+async function loginUser(req) {
+  const schema = joi.object({
+    email: joi.string().email().required(),
+    password: joi.string().required(),
+  });
+
+  const validation = schema.validate({
+    email: req.email,
+    password: req.password,
+  });
+
+  if (validation.error) {
+    return {
+      status: 422,
+      body: { status: false, message: validation.error.details[0].message },
+    };
+  }
+
+  try {
+    let user = await models.user.findOne({ where: { email: req.email } });
+    if (!user) {
+      return {
+        status: 401,
+        body: { status: false, message: "Invalid Email or password" },
+      };
+    }
+
+    let validPassword = await bcrypt.compare(req.password, user.password);
+    if (!validPassword) {
+      return {
+        status: 401,
+        body: { status: false, message: "Invalid Email or password" },
+      };
+    }
+
+    let token = jwt.sign({ id: user.id }, process.env.TOKEN_SECRET);
+    return {
+      status: 200,
+      body: {
+        status: true,
+        message: "Authenticated Successfully",
+        user: user,
+        token: token,
+      },
+    };
+  } catch (err) {
+    console.log(err);
+    return { status: 500, body: { status: false, message: "Internal Error" } };
+  }
+}
+
+module.exports = { createUser, getAllUsers, loginUser };
