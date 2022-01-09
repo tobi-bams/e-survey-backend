@@ -87,23 +87,6 @@ async function createUser(req) {
 }
 
 async function loginUser(req) {
-  const schema = joi.object({
-    email: joi.string().email().required(),
-    password: joi.string().required(),
-  });
-
-  const validation = schema.validate({
-    email: req.email,
-    password: req.password,
-  });
-
-  if (validation.error) {
-    return {
-      status: 422,
-      body: { status: false, message: validation.error.details[0].message },
-    };
-  }
-
   try {
     let user = await models.user.findOne({ where: { email: req.email } });
     if (!user) {

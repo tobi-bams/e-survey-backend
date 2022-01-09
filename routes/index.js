@@ -1,5 +1,7 @@
+const route = require("color-convert/route");
 const express = require("express");
 const { createUser, getAllUsers, loginUser } = require("../controllers");
+const { createQuestion, getAllQuestions } = require("../controllers/question");
 const auth = require("../verifyToken");
 
 const router = express.Router();
@@ -22,6 +24,11 @@ router.post("/login", async (req, res) => {
 router.post("/question", auth, async (req, res) => {
   const question = await createQuestion(req);
   res.status(question.status).json(question.body);
+});
+
+router.get("/questions", async (req, res) => {
+  const questions = await getAllQuestions();
+  res.status(questions.status).json(questions.body);
 });
 
 module.exports = router;
