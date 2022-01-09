@@ -1,5 +1,6 @@
 const models = require("../models");
 const joi = require("joi");
+const { forEach } = require("lodash");
 
 async function createQuestion(req) {
   const schema = joi.object({
@@ -213,9 +214,75 @@ async function userQuestions(req) {
   }
 }
 
+async function adminQuestions(req) {
+  try {
+    let user = await models.user.findOne({ where: { id: req.user.id } });
+    if (user.role !== "admin") {
+      return {
+        status: 401,
+        body: {
+          status: false,
+          message: "You are not authorized to get this questions",
+        },
+      };
+    }
+
+    let questions = await models.questions.findAll({
+      include: [models.options],
+    });
+    let allOptions = await models.options.findAll({
+      include: [
+        { model: models.user, as: "users", through: models.user_options },
+      ],
+    });
+    let questionCount = {};
+    let optionCount = {};
+    allOptions.forEach((option) => {
+      optionCount[option.id] = option.users.length;
+      if (questionCount[option.questionId]) {
+        questionCount[option.questionId] =
+          questionCount[option.questionId] + option.users.length;
+      } else {
+        questionCount[option.questionId] = option.users.length;
+      }
+    });
+    const optionHandler = (options) => {
+      let summarizedOption = [];
+      options.forEach((option) => {
+        summarizedOption.push({
+          id: option.id,
+          option: option.text,
+          votes: optionCount[option.id],
+        });
+      });
+      return summarizedOption;
+    };
+    let data = [];
+    questions.forEach((question) => {
+      data.push({
+        id: question.id,
+        question: question.text,
+        response: questionCount[question.id],
+        options: optionHandler(question.options),
+      });
+    });
+    return {
+      status: 200,
+      body: { status: true, message: "Admin Questions", data: data },
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      status: 500,
+      body: { status: false, message: "Internal Server Error" },
+    };
+  }
+}
+
 module.exports = {
   createQuestion,
   getAllQuestions,
   submitResponse,
   userQuestions,
+  adminQuestions,
 };

@@ -6,6 +6,7 @@ const {
   getAllQuestions,
   submitResponse,
   userQuestions,
+  adminQuestions,
 } = require("../controllers/question");
 const auth = require("../verifyToken");
 
@@ -43,6 +44,11 @@ router.post("/submit-response", auth, async (req, res) => {
 
 router.get("/user-questions", auth, async (req, res) => {
   const questions = await userQuestions(req);
+  res.status(questions.status).json(questions.body);
+});
+
+router.get("/admin-questions", auth, async (req, res) => {
+  const questions = await adminQuestions(req);
   res.status(questions.status).json(questions.body);
 });
 
