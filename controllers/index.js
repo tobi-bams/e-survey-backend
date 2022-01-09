@@ -1,5 +1,6 @@
 const models = require("../models");
 const bcrypt = require("bcrypt");
+const joi = require("joi");
 
 async function getAllUsers() {
   try {
@@ -15,6 +16,30 @@ async function getAllUsers() {
 }
 
 async function createUser(req) {
+  const schema = joi.object({
+    name: joi.string().required(),
+    email: joi.string().email().required(),
+    address: joi.string().required(),
+    dob: joi.date().required(),
+    password: joi.string().required(),
+    sni: joi.string().required(),
+  });
+
+  const validation = schema.validate({
+    name: req.name,
+    email: req.email,
+    dob: req.dob,
+    address: req.address,
+    password: req.password,
+    sni: req.sni,
+  });
+
+  if (validation.error) {
+    return {
+      status: 422,
+      body: { status: false, message: validation.error.details[0].message },
+    };
+  }
   try {
     let emailExist = await models.user.findOne({ where: { email: req.email } });
     if (emailExist) {
