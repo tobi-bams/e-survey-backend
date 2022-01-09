@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       this.hasMany(options);
     }
+    toJSON() {
+      return {
+        ...this.get(),
+        createdAt: undefined,
+        updatedAt: undefined,
+      };
+    }
   }
   questions.init(
     {

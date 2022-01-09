@@ -106,12 +106,36 @@ async function submitResponse(req) {
         },
       };
     }
+    if (userResponse.length === 0) {
+      return {
+        status: 422,
+        body: {
+          status: false,
+          message: "Please answer all the questions",
+        },
+      };
+    }
+    let submittedResponse = await models.user_options.findOne({
+      where: { userId: user.id },
+    });
+
+    if (submittedResponse) {
+      return {
+        status: 400,
+        body: {
+          status: false,
+          message: "You cannot retake the survey",
+        },
+      };
+    }
     let selectedOptions = [];
     for (let i = 0; i < userResponse.length; i++) {
-      selectedOptions.push({
-        userId: userId,
-        optionId: userResponse[i].selectedResponse,
-      });
+      if (userResponse[i].selectedOption !== null) {
+        selectedOptions.push({
+          userId: userId,
+          optionId: userResponse[i].selectedResponse,
+        });
+      }
     }
     let trial = await models.user_options.bulkCreate(selectedOptions);
     console.log(trial);
@@ -128,36 +152,70 @@ async function submitResponse(req) {
   }
 }
 
-// async function userQuestions(req) {
-//   try {
-//     let user = await models.user.findOne(
-//       { where: { id: req.user.id } },
-//       { include: [models.options] }
-//     );
-//     if (user.role !== "user") {
-//       return {
-//         status: 401,
-//         body: {
-//           status: false,
-//           message: "You are not authorized to view this page",
-//         },
-//       };
-//     }
-//     let question = await models.questions.findAll({
-//       include: [models.options],
-//     });
+async function userQuestions(req) {
+  try {
+    let user = await models.user.findOne({
+      where: { id: req.user.id },
+      include: [
+        {
+          model: models.options,
+          as: "options",
+          through: models.user_options,
+        },
+      ],
+    });
 
-//     let data = [];
-//     for (let i = 0; i < question.length; i++) {
+    if (user.role !== "user") {
+      return {
+        status: 401,
+        body: {
+          status: false,
+          message: "You are not authorized to view this page",
+        },
+      };
+    }
+    let question = await models.questions.findAll({
+      include: [models.options],
+    });
 
-//     }
-//   } catch (err) {
-//     console.log(err);
-//     return {
-//       status: 500,
-//       body: { status: false, message: "Internal Server Error" },
-//     };
-//   }
-// }
+    let data = [];
+    for (let i = 0; i < question.length; i++) {
+      let tempOption = null;
+      for (let y = 0; y < user.options.length; y++) {
+        if (question[i].id === user.options[y].questionId) {
+          tempOption = { selectedOption: user.options[y].id };
+        }
+      }
+      if (tempOption === null) {
+        data.push({
+          question: question[i],
+          selectedOption: null,
+          answered: false,
+        });
+      } else {
+        data.push({
+          question: question[i],
+          selectedOption: tempOption.selectedOption,
+          answered: true,
+        });
+      }
+    }
+    return {
+      status: 200,
+      body: { status: true, message: "All Questions", data: data },
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      status: 500,
+      body: { status: false, message: "Internal Server Error" },
+    };
+  }
+}
 
-module.exports = { createQuestion, getAllQuestions, submitResponse };
+module.exports = {
+  createQuestion,
+  getAllQuestions,
+  submitResponse,
+  userQuestions,
+};

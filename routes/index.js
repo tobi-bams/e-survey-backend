@@ -1,11 +1,11 @@
 const route = require("color-convert/route");
 const express = require("express");
-const hasOwnProperty = require("has");
 const { createUser, getAllUsers, loginUser } = require("../controllers");
 const {
   createQuestion,
   getAllQuestions,
   submitResponse,
+  userQuestions,
 } = require("../controllers/question");
 const auth = require("../verifyToken");
 
@@ -41,8 +41,9 @@ router.post("/submit-response", auth, async (req, res) => {
   res.status(response.status).json(response.body);
 });
 
-// router.get("/user-questions", auth, async (req, res) => {
-//     const questions = await happy;
-// });
+router.get("/user-questions", auth, async (req, res) => {
+  const questions = await userQuestions(req);
+  res.status(questions.status).json(questions.body);
+});
 
 module.exports = router;
