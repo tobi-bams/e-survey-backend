@@ -1,6 +1,6 @@
 const models = require("../models");
 const joi = require("joi");
-const { includes } = require("lodash");
+
 async function createQuestion(req) {
   const schema = joi.object({
     question: joi.string().required(),
@@ -73,4 +73,91 @@ async function getAllQuestions() {
   }
 }
 
-module.exports = { createQuestion, getAllQuestions };
+async function submitResponse(req) {
+  let userId = req.user.id;
+  let userResponse = req.body.response;
+
+  const schema = joi.object({
+    response: joi.array().required(),
+  });
+
+  const validation = schema.validate({
+    response: userResponse,
+  });
+
+  if (validation.error) {
+    return {
+      status: 422,
+      body: { status: false, message: validation.error.details[0].message },
+    };
+  }
+
+  try {
+    let user = await models.user.findOne(
+      { where: { id: req.user.id } },
+      { include: [models.options] }
+    );
+    if (user.role !== "user") {
+      return {
+        status: 401,
+        body: {
+          status: false,
+          message: "You are not authorized to view this page",
+        },
+      };
+    }
+    let selectedOptions = [];
+    for (let i = 0; i < userResponse.length; i++) {
+      selectedOptions.push({
+        userId: userId,
+        optionId: userResponse[i].selectedResponse,
+      });
+    }
+    let trial = await models.user_options.bulkCreate(selectedOptions);
+    console.log(trial);
+    return {
+      status: 201,
+      body: { status: true, message: "Response Recorded Successfully" },
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      status: 500,
+      body: { status: false, message: "Internal Server Error" },
+    };
+  }
+}
+
+// async function userQuestions(req) {
+//   try {
+//     let user = await models.user.findOne(
+//       { where: { id: req.user.id } },
+//       { include: [models.options] }
+//     );
+//     if (user.role !== "user") {
+//       return {
+//         status: 401,
+//         body: {
+//           status: false,
+//           message: "You are not authorized to view this page",
+//         },
+//       };
+//     }
+//     let question = await models.questions.findAll({
+//       include: [models.options],
+//     });
+
+//     let data = [];
+//     for (let i = 0; i < question.length; i++) {
+
+//     }
+//   } catch (err) {
+//     console.log(err);
+//     return {
+//       status: 500,
+//       body: { status: false, message: "Internal Server Error" },
+//     };
+//   }
+// }
+
+module.exports = { createQuestion, getAllQuestions, submitResponse };

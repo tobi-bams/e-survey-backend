@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate({ options }) {
       // define association here
-      this.belongsToMany(options, { through: "userOptions" });
+      user.belongsToMany(options, {
+        foreignKey: "userId",
+        through: "user_options",
+        as: "options",
+      });
     }
 
     toJSON() {

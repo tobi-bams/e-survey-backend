@@ -8,13 +8,17 @@ dotenv.config();
 
 async function getAllUsers() {
   try {
-    let users = await models.user.findAll();
+    let users = await models.user.findAll({
+      include: [
+        { model: models.options, as: "options", through: models.user_options },
+      ],
+    });
     return {
       status: 200,
       body: { status: true, message: "All users", data: users },
     };
   } catch (err) {
-    console.log(error);
+    console.log(err);
   }
   return { status: 500, body: { status: false, message: "Internal Error" } };
 }
