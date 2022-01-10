@@ -1,6 +1,5 @@
 const models = require("../models");
 const joi = require("joi");
-const { forEach } = require("lodash");
 
 async function createQuestion(req) {
   const schema = joi.object({
@@ -286,10 +285,99 @@ async function adminQuestions(req) {
   }
 }
 
+async function editQuestion(req) {
+  const schema = joi.object({
+    question: joi.string().required(),
+    options: joi.array().required(),
+  });
+
+  let question = req.body.question;
+  let options = req.body.options;
+  const validation = schema.validate({
+    question: question,
+    options: options,
+  });
+
+  if (validation.error) {
+    return {
+      status: 422,
+      body: { status: false, message: validation.error.details[0].message },
+    };
+  }
+
+  if (options.length === 0) {
+    return {
+      status: 422,
+      body: { status: false, message: "Options cannot be empty" },
+    };
+  }
+
+  const t = await models.sequelize.transaction();
+  try {
+    let creator = await models.user.findOne(
+      { where: { id: req.user.id } },
+      { transaction: t }
+    );
+    if (creator.role !== "admin") {
+      return {
+        status: 401,
+        body: { status: false, message: "You cannot create a question" },
+      };
+    }
+
+    let updateQuestion = await models.questions.findOne({
+      where: { id: req.body.id },
+    });
+
+    await updateQuestion.update({ text: question }, { transaction: t });
+
+    let newOptionArray = [];
+    for (let i = 0; i < options.length; i++) {
+      newOptionArray.push({
+        id: options[i].id,
+        text: options[i].option,
+      });
+    }
+    for (let option of newOptionArray) {
+      let updateOption = await models.options.findOne({
+        where: { id: option.id },
+        include: [
+          { model: models.user, as: "users", through: models.user_options },
+        ],
+      });
+
+      if (updateOption.users.length > 0) {
+        await t.rollback();
+        return {
+          status: 400,
+          body: {
+            status: false,
+            message: "You cannot Edit a question that has been answered",
+          },
+        };
+      }
+      await updateOption.update({ text: option.text }, { transaction: t });
+    }
+    await t.commit();
+    return {
+      status: 201,
+      body: {
+        status: true,
+        message: "Question Updated Successfully",
+      },
+    };
+  } catch (err) {
+    await t.rollback();
+    console.log(err);
+    return { status: 500, body: { status: false, message: "Internal Error" } };
+  }
+}
+
 module.exports = {
   createQuestion,
   getAllQuestions,
   submitResponse,
   userQuestions,
   adminQuestions,
+  editQuestion,
 };
