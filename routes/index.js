@@ -33,7 +33,7 @@ router.post("/question", auth, async (req, res) => {
   res.status(question.status).json(question.body);
 });
 
-router.get("/questions", async (req, res) => {
+router.get("/GetAllQuestions", async (req, res) => {
   const questions = await getAllQuestions();
   res.status(questions.status).json(questions.body);
 });

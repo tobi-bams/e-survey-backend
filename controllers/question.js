@@ -67,12 +67,14 @@ async function createQuestion(req) {
 
 async function getAllQuestions() {
   try {
-    let questions = await models.questions.findAll({
-      include: [models.options],
-    });
+    let questions = await models.questions.findAll();
     return {
       status: 200,
-      body: { message: "All Questions Created", data: questions },
+      body: {
+        status: true,
+        message: "All Questions Created",
+        data: { consulations: { Questions: questions } },
+      },
     };
   } catch (err) {
     console.log(err);
