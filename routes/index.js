@@ -7,6 +7,7 @@ const {
   userQuestions,
   adminQuestions,
   editQuestion,
+  deleteQuestion,
 } = require("../controllers/question");
 const auth = require("../verifyToken");
 
@@ -54,6 +55,11 @@ router.get("/admin-questions", auth, async (req, res) => {
 
 router.put("/question", auth, async (req, res) => {
   const question = await editQuestion(req);
+  res.status(question.status).json(question.body);
+});
+
+router.delete("/question/:id", auth, async (req, res) => {
+  const question = await deleteQuestion(req);
   res.status(question.status).json(question.body);
 });
 

@@ -373,6 +373,33 @@ async function editQuestion(req) {
   }
 }
 
+async function deleteQuestion(req) {
+  try {
+    let question = await models.questions.findOne({
+      where: { id: req.params.id },
+    });
+    if (!question) {
+      return {
+        status: 404,
+        body: {
+          status: false,
+          message: "Question does not exist",
+        },
+      };
+    }
+    return {
+      status: 200,
+      body: {
+        status: true,
+        message: "Question deleted Successfully",
+      },
+    };
+  } catch (error) {
+    console.log(error);
+    return { status: 500, body: { status: false, message: "Internal Error" } };
+  }
+}
+
 module.exports = {
   createQuestion,
   getAllQuestions,
@@ -380,4 +407,5 @@ module.exports = {
   userQuestions,
   adminQuestions,
   editQuestion,
+  deleteQuestion,
 };
