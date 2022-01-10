@@ -100,7 +100,7 @@ async function submitResponse(req) {
       body: { status: false, message: validation.error.details[0].message },
     };
   }
-
+  const t = await models.sequelize.transaction();
   try {
     let user = await models.user.findOne(
       { where: { id: req.user.id } },
@@ -124,19 +124,7 @@ async function submitResponse(req) {
         },
       };
     }
-    let submittedResponse = await models.user_options.findOne({
-      where: { userId: user.id },
-    });
 
-    if (submittedResponse) {
-      return {
-        status: 400,
-        body: {
-          status: false,
-          message: "You cannot retake the survey",
-        },
-      };
-    }
     let selectedOptions = [];
     for (let i = 0; i < userResponse.length; i++) {
       if (userResponse[i].selectedOption !== null) {
@@ -146,13 +134,39 @@ async function submitResponse(req) {
         });
       }
     }
-    let trial = await models.user_options.bulkCreate(selectedOptions);
-    console.log(trial);
-    return {
-      status: 201,
-      body: { status: true, message: "Response Recorded Successfully" },
-    };
+    let insertUserOptionStatus = false;
+    for (let selectedOption of selectedOptions) {
+      let isAnswered = await models.user_options.findOne({
+        where: { ...selectedOption },
+      });
+      if (!isAnswered) {
+        let insertUserOption = await models.user_options.create(
+          { ...selectedOption },
+          { transaction: t }
+        );
+        if (insertUserOption) {
+          insertUserOptionStatus = true;
+        }
+      }
+    }
+
+    if (insertUserOptionStatus) {
+      await t.commit();
+      return {
+        status: 201,
+        body: { status: true, message: "Response Recorded Successfully" },
+      };
+    } else {
+      return {
+        status: 400,
+        body: {
+          status: false,
+          message: "You cannot retake the survey",
+        },
+      };
+    }
   } catch (err) {
+    await t.rollback();
     console.log(err);
     return {
       status: 500,
