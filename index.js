@@ -14,7 +14,8 @@ app.use((req, res) => {
   res.status(404).json({ status: false, message: "Route not found" });
 });
 
-app.listen(5000, async () => {
+let PORT = process.env.PORT || 5000;
+app.listen(PORT, async () => {
   console.log(" We are good here");
   try {
     await sequelize.authenticate();
