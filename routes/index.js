@@ -9,6 +9,7 @@ const {
   editQuestion,
   deleteQuestion,
   getQuestionOptions,
+  getQuestionRResponse,
 } = require("../controllers/question");
 const auth = require("../verifyToken");
 
@@ -67,6 +68,11 @@ router.delete("/question/:id", auth, async (req, res) => {
 router.get("/GetQuestionOptions/:id", async (req, res) => {
   let options = await getQuestionOptions(req);
   res.status(options.status).json(options.body);
+});
+
+router.get("/GetQuestionResponse/:id", async (req, res) => {
+  let response = await getQuestionRResponse(req);
+  res.status(response.status).json(response.body);
 });
 
 module.exports = router;

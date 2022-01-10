@@ -433,6 +433,41 @@ async function getQuestionOptions(req) {
   }
 }
 
+async function getQuestionRResponse(req) {
+  try {
+    let question = await models.questions.findOne({
+      where: { id: req.params.id },
+    });
+
+    if (!question) {
+      return {
+        status: 404,
+        body: { status: false, message: "Question does not exits" },
+      };
+    }
+    let options = await models.options.findAll({
+      where: { questionId: req.params.id },
+      include: [
+        { model: models.user, as: "users", through: models.user_options },
+      ],
+    });
+    const newOptionsArray = [];
+    options.forEach((option) => {
+      newOptionsArray.push({ id: option.id, count: option.users.length });
+    });
+    return {
+      status: 200,
+      body: {
+        status: true,
+        message: "Question Responses",
+        data: { Question: req.params.id, Answers: newOptionsArray },
+      },
+    };
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 module.exports = {
   createQuestion,
   getAllQuestions,
@@ -442,4 +477,5 @@ module.exports = {
   editQuestion,
   deleteQuestion,
   getQuestionOptions,
+  getQuestionRResponse,
 };
