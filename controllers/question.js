@@ -389,11 +389,42 @@ async function deleteQuestion(req) {
         },
       };
     }
+
+    await question.destroy();
     return {
       status: 200,
       body: {
         status: true,
         message: "Question deleted Successfully",
+      },
+    };
+  } catch (error) {
+    console.log(error);
+    return { status: 500, body: { status: false, message: "Internal Error" } };
+  }
+}
+
+async function getQuestionOptions(req) {
+  try {
+    let question = await models.questions.findOne({
+      where: { id: req.params.id },
+    });
+
+    if (!question) {
+      return {
+        status: 404,
+        body: { status: false, message: "Question does not exits" },
+      };
+    }
+    let options = await models.options.findAll({
+      where: { questionId: question.id },
+    });
+    return {
+      status: 200,
+      body: {
+        status: true,
+        message: "Question Options",
+        data: { Question: req.params.id, Options: options },
       },
     };
   } catch (error) {
@@ -410,4 +441,5 @@ module.exports = {
   adminQuestions,
   editQuestion,
   deleteQuestion,
+  getQuestionOptions,
 };
