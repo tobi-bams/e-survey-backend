@@ -95,7 +95,7 @@ async function loginUser(req) {
     let user = await models.user.findOne({ where: { email: req.email } });
     if (!user) {
       return {
-        status: 401,
+        status: 404,
         body: { status: false, message: "Invalid Email or password" },
       };
     }
@@ -103,7 +103,7 @@ async function loginUser(req) {
     let validPassword = await bcrypt.compare(req.password, user.password);
     if (!validPassword) {
       return {
-        status: 401,
+        status: 404,
         body: { status: false, message: "Invalid Email or password" },
       };
     }

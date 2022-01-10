@@ -21,6 +21,13 @@ async function createQuestion(req) {
       body: { status: false, message: validation.error.details[0].message },
     };
   }
+
+  if (options.length === 0) {
+    return {
+      status: 422,
+      body: { status: false, message: "Options cannot be empty" },
+    };
+  }
   const t = await models.sequelize.transaction();
   try {
     let creator = await models.user.findOne(
@@ -134,7 +141,7 @@ async function submitResponse(req) {
       if (userResponse[i].selectedOption !== null) {
         selectedOptions.push({
           userId: userId,
-          optionId: userResponse[i].selectedResponse,
+          optionId: userResponse[i].selectedOption,
         });
       }
     }
